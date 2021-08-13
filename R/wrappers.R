@@ -57,7 +57,7 @@ t_test <- function(x, formula,
                    conf_int = TRUE,
                    conf_level = 0.95,
                    ...) {
-  
+
   check_conf_level(conf_level)
 
   # convert all character and logical variables to be factor variables
@@ -172,7 +172,7 @@ t_stat <- function(x, formula,
     msg = c("The t_stat() wrapper has been deprecated in favor of the more " ,
             "general observe(). Please use that function instead.")
   )
-  
+
   check_conf_level(conf_level)
 
   # convert all character and logical variables to be factor variables
@@ -293,7 +293,7 @@ chisq_test <- function(x, formula, response = NULL,
 #'
 #' A shortcut wrapper function to get the observed test statistic for a chisq
 #' test. Uses [chisq.test()][stats::chisq.test()], which applies a continuity
-#' correction. This function has been deprecated in favor of the more 
+#' correction. This function has been deprecated in favor of the more
 #' general [observe()].
 #'
 #' @param x A data frame that can be coerced into a [tibble][tibble::tibble].
@@ -330,10 +330,10 @@ chisq_stat <- function(x, formula, response = NULL,
                        explanatory = NULL, ...) {
   .Deprecated(
     new = "observe",
-    msg = c("The chisq_stat() wrapper has been deprecated in favor of the ", 
+    msg = c("The chisq_stat() wrapper has been deprecated in favor of the ",
             "more general observe(). Please use that function instead.")
   )
-  
+
   # Parse response and explanatory variables
   response    <- enquo(response)
   explanatory <- enquo(explanatory)
@@ -412,8 +412,8 @@ check_conf_level <- function(conf_level) {
 #'   a string. Only used when testing the null that a single
 #'   proportion equals a given value, or that two proportions are equal;
 #'   ignored otherwise.
-#' @param correct A logical indicating whether Yates' continuity correction 
-#'   should be applied where possible. If `z = TRUE`, the `correct` argument will 
+#' @param correct A logical indicating whether Yates' continuity correction
+#'   should be applied where possible. If `z = TRUE`, the `correct` argument will
 #'   be overwritten as `FALSE`. Otherwise defaults to `correct = TRUE`.
 #' @param z A logical value for whether to report the statistic as a standard
 #'   normal deviate or a Pearson's chi-square statistic. \eqn{z^2}  is distributed
@@ -434,7 +434,7 @@ check_conf_level <- function(conf_level) {
 #' prop_test(gss,
 #'           college ~ NULL,
 #'           p = .2)
-#' 
+#'
 #' # report as a z-statistic rather than chi-square
 #' # and specify the success level of the response
 #' prop_test(gss,
@@ -492,7 +492,7 @@ prop_test <- function(x, formula,
       stop_glue('{success} is not a valid level of {response_name(x)}.')
     }
 
-    lvls <- c(success, lvls[lvls != success])
+    lvls <- c(lvls[lvls == success], lvls[lvls != success])
   } else {
     success <- lvls[1]
   }
@@ -504,13 +504,15 @@ prop_test <- function(x, formula,
 
     # make a summary table to supply to prop.test
     sum_table <- x %>%
-      select(response_name(x), explanatory_name(x)) %>%
+      select(explanatory_name(x), response_name(x)) %>%
+      #select(response_name(x), explanatory_name(x)) %>%
       mutate_if(is.character, as.factor) %>%
       mutate_if(is.logical, as.factor) %>%
       table()
 
     # reorder according to the order and success arguments
-    sum_table <- sum_table[lvls, order]
+    sum_table <- sum_table[order, lvls]
+    #sum_table <- sum_table[lvls, order]
 
     prelim <- stats::prop.test(x = sum_table,
                                alternative = alternative,
@@ -537,7 +539,7 @@ prop_test <- function(x, formula,
                                p = p,
                                correct = correct,
                                ...)
-      
+
   }
 
   if (length(prelim$estimate) <= 2) {
@@ -565,7 +567,7 @@ prop_test <- function(x, formula,
                     chisq_df = parameter,
                     p_value = p.value)
   }
-  
+
   if (z) {
     results <- calculate_z(x, results, success, p, order)
   }
@@ -575,9 +577,9 @@ prop_test <- function(x, formula,
 
 calculate_z <- function(x, results, success, p, order) {
   exp <- if (has_explanatory(x)) {explanatory_name(x)} else {"NULL"}
-  
+
   form <- as.formula(paste0(response_name(x), " ~ ", exp))
-  
+
   stat <- x %>%
     specify(formula = form, success = success) %>%
     hypothesize(
@@ -589,9 +591,9 @@ calculate_z <- function(x, results, success, p, order) {
       order = if (has_explanatory(x)) {order} else {NULL}
     ) %>%
     dplyr::pull()
-  
+
   results$statistic <- stat
   results$chisq_df <- NULL
-  
+
   results
 }
